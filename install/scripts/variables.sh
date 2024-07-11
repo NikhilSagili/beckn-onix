@@ -55,6 +55,7 @@ webhook_url="http://sandbox-api:3000"
 bpp_docker_compose_file=docker-compose-bpp.yml
 bpp_docker_compose_file_sandbox=docker-compose-bpp-with-sandbox.yml
 bap_docker_compose_file=docker-compose-bap.yml
+app_docker_compose_file=docker-compose-app.yml
 registry_docker_compose_file=docker-compose-registry.yml
 gateway_docker_compose_file=docker-compose-gateway.yml
 gcl_docker_compose_file=docker-compose-gcl.yml

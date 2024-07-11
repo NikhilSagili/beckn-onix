@@ -1,7 +1,6 @@
 #!/bin/bash
 source scripts/variables.sh
 source scripts/get_container_details.sh
-
 # Function to start a specific service inside docker-compose file
 install_package(){
     echo "${GREEN}................Installing required packages................${NC}"
@@ -10,11 +9,30 @@ install_package(){
 
 }
 start_container(){
-    #ignore orphaned containers warning
+    # Ignore orphaned containers warning
     export COMPOSE_IGNORE_ORPHANS=1
-    docker compose -f $1 up -d $2
+
+    echo "Running: docker-compose -f $1 up -d $2"
+    docker-compose -f $1 up -d $2
 }
 
+
+    
+          
+            
+    
+
+          
+          Expand Down
+          
+            
+    
+
+          
+          Expand Up
+    
+    @@ -53,21 +55,41 @@ update_registry_details() {
+  
 update_registry_details() {
     if [[ $1 ]];then
         if [[ $1 == https://* ]]; then
@@ -34,7 +52,6 @@ update_registry_details() {
             registry_port=80
             protocol=http
         fi
-
     else
         registry_url=registry  
         registry_port=3030
@@ -53,24 +70,58 @@ update_registry_details() {
     docker rmi busybox
 }
 # Function to start the MongoDB, Redis, and RabbitMQ Services
+# DOCKER_COMPOSE_FILE=$(./docker-compose-app.yml)
+
 start_support_services(){
-    #ignore orphaned containers warning
     export COMPOSE_IGNORE_ORPHANS=1
     echo "${GREEN}................Installing MongoDB................${NC}"
-    docker compose -f docker-compose-app.yml up -d mongo_db
+    # docker-compose -f $DOCKER_COMPOSE_FILE up -d mongo_db
+    start_container $app_docker_compose_file mongo_db
     echo "MongoDB installation successful"
 
     echo "${GREEN}................Installing RabbitMQ................${NC}"
-    docker compose -f docker-compose-app.yml up -d queue_service
+    # docker-compose -f $DOCKER_COMPOSE_FILE up -d queue_service
+    start_container $app_docker_compose_file queue_service
     echo "RabbitMQ installation successful"
 
     echo "${GREEN}................Installing Redis................${NC}"
-    docker compose -f docker-compose-app.yml up -d redis_db
+    # docker-compose -f $DOCKER_COMPOSE_FILE up -d redis_db
+    start_container $app_docker_compose_file redis_db
     echo "Redis installation successful"
 }
+# start_support_services(){
+#     #ignore orphaned containers warning
+#     export COMPOSE_IGNORE_ORPHANS=1
+#     echo "${GREEN}................Installing MongoDB................${NC}"
+#     if ! command -v docker-compose &> /dev/null; then
+#     echo "docker-compose could not be found"
+#     exit 1
+#     fi
+#     docker-compose -f docker-compose-app.yml up -d mongo_db
+#     echo "MongoDB installation successful"
+
+#     echo "${GREEN}................Installing RabbitMQ................${NC}"
+#     docker-compose -f docker-compose-app.yml up -d queue_service
+#     echo "RabbitMQ installation successful"
+
+#     echo "${GREEN}................Installing Redis................${NC}"
+#     docker-compose -f docker-compose-app.yml up -d redis_db
+#     echo "Redis installation successful"
+# }
 
 install_gateway() {
     if [[ $1 && $2 ]]; then
+
+    
+          
+            
+    
+
+          
+          Expand Down
+    
+    
+  
         bash scripts/update_gateway_details.sh $1 $2
     else
         bash scripts/update_gateway_details.sh http://registry:3030
@@ -78,7 +129,6 @@ install_gateway() {
     echo "${GREEN}................Installing Gateway service................${NC}"
     start_container $gateway_docker_compose_file gateway
     echo "Registering Gateway in the registry"
-
     sleep 10
     # if [[ $1 && $2 ]]; then
     #     bash scripts/register_gateway.sh $2
@@ -88,7 +138,6 @@ install_gateway() {
     echo " "
     echo "Gateway installation successful"
 }
-
 # Function to install Beckn Gateway and Beckn Registry
 install_registry(){
     if [[ $1 ]]; then
@@ -96,13 +145,11 @@ install_registry(){
     else
         update_registry_details
     fi
-
     echo "${GREEN}................Installing Registry service................${NC}"
     start_container $registry_docker_compose_file registry
     sleep 10
     echo "Registry installation successful"
 }
-
 # Function to install BAP Protocol Server
 install_bap_protocol_server(){
     start_support_services
@@ -123,14 +170,11 @@ install_bap_protocol_server(){
     docker run --rm -v $SCRIPT_DIR/../protocol-server-data:/source -v bap_network_config_volume:/target busybox cp /source/bap-network.yml /target/default.yml
     docker run --rm -v $SCRIPT_DIR/../protocol-server-data:/source -v bap_network_config_volume:/target busybox cp /source/bap-network.yaml-sample /target
     docker rmi busybox
-
     start_container $bap_docker_compose_file "bap-client"
     start_container $bap_docker_compose_file "bap-network"
     sleep 10
     echo "Protocol server BAP installation successful"
 }
-
-
 # Function to install BPP Protocol Server without Sandbox
 install_bpp_protocol_server(){
     start_support_services
@@ -146,7 +190,6 @@ install_bpp_protocol_server(){
     else
         bash scripts/update_bpp_config.sh
     fi
-
     sleep 10
     docker volume create bpp_client_config_volume
     docker volume create bpp_network_config_volume
@@ -155,17 +198,14 @@ install_bpp_protocol_server(){
     docker run --rm -v $SCRIPT_DIR/../protocol-server-data:/source -v bpp_network_config_volume:/target busybox cp /source/bpp-network.yml /target/default.yml
     docker run --rm -v $SCRIPT_DIR/../protocol-server-data:/source -v bpp_network_config_volume:/target busybox cp /source/bpp-network.yaml-sample /target
     docker rmi busybox
-
     start_container $bpp_docker_compose_file "bpp-client"
     start_container $bpp_docker_compose_file "bpp-network"
     sleep 10
     echo "Protocol server BPP installation successful"
 }
-
 # Function to install BPP Protocol Server with Sandbox
 install_bpp_protocol_server_with_sandbox(){
     start_support_services
-
     docker volume create bpp_client_config_volume
     docker volume create bpp_network_config_volume
     
@@ -173,7 +213,6 @@ install_bpp_protocol_server_with_sandbox(){
     start_container $bpp_docker_compose_file_sandbox "sandbox-api"
     sleep 5
     echo "Sandbox installation successful"
-
     echo "${GREEN}................Installing Protocol Server for BPP................${NC}"
     
     if [[ $1 ]];then
@@ -186,27 +225,21 @@ install_bpp_protocol_server_with_sandbox(){
     else
         bash scripts/update_bpp_config.sh
     fi
-
     sleep 10
     docker run --rm -v $SCRIPT_DIR/../protocol-server-data:/source -v bpp_client_config_volume:/target busybox cp /source/bpp-client.yml /target/default.yml
     docker run --rm -v $SCRIPT_DIR/../protocol-server-data:/source -v bpp_client_config_volume:/target busybox cp /source/bpp-client.yaml-sample /target
     docker run --rm -v $SCRIPT_DIR/../protocol-server-data:/source -v bpp_network_config_volume:/target busybox cp /source/bpp-network.yml /target/default.yml
     docker run --rm -v $SCRIPT_DIR/../protocol-server-data:/source -v bpp_network_config_volume:/target busybox cp /source/bpp-network.yaml-sample /target
     docker rmi busybox
-
     start_container $bpp_docker_compose_file "bpp-client"
     start_container $bpp_docker_compose_file "bpp-network"
     sleep 10
     echo "Protocol server BPP installation successful"
 }
-
-
 # Function to handle the setup process for each platform
 completeSetup() {
     platform=$1
-
     public_address="https://<your public IP address>"
-
     echo "Proceeding with the setup for $platform..."
     
     # Insert the specific commands for each platform, including requesting network config if necessary
@@ -234,7 +267,6 @@ completeSetup() {
             if [[ $gateway_url =~ /$ ]]; then
                 gateway_url=${gateway_url%/}
             fi
-
             public_address=$gateway_url
             install_package
             install_gateway $new_registry_url $gateway_url
@@ -256,7 +288,6 @@ completeSetup() {
             read -p "Enter BPP Subscriber URL: " bpp_subscriber_url
             read -p "Enter the registry_url(e.g. https://registry.becknprotocol.io/subscribers): " registry_url
             read -p "Enter Webhook URL: " webhook_url
-
             bpp_subscriber_key_id=$bpp_subscriber_id-key
             public_address=$bpp_subscriber_url
             install_package
@@ -267,30 +298,23 @@ completeSetup() {
             exit 1
             ;;
     esac
-
     echo "[Installation Logs]"
     echo -e "${boldGreen}Your $platform setup is complete.${reset}"
     echo -e "${boldGreen}You can access your $platform at $public_address ${reset}"
     # Key generation and subscription logic follows here
 }
-
-
 # MAIN SCRIPT STARTS HERE
-
 echo "Welcome to Beckn-ONIX!"
 if [ -f ./onix_ascii_art.txt ]; then
     cat ./onix_ascii_art.txt
 else
     echo "[Display Beckn-ONIX ASCII Art]"
 fi
-
 echo "Beckn-ONIX is a platform that helps you quickly launch and configure beckn-enabled networks."
 echo -e "\nWhat would you like to do?\n1. Join an existing network\n2. Create new production network\n3. Set up a network on your local machine\n4. Merge multiple networks\n5. Configure Existing Network\n(Press Ctrl+C to exit)"
 read -p "Enter your choice: " choice
-
 boldGreen="\e[1m\e[92m"
 reset="\e[0m"
-
 if [[ $choice -eq 3 ]]; then
     echo "Installing all components on the local machine"
     install_package
@@ -302,17 +326,13 @@ else
     # Determine the platforms available based on the initial choice
     platforms=("Gateway" "BAP" "BPP")
     [ "$choice" -eq 2 ] && platforms=("Registry" "${platforms[@]}")  # Add Registry for new network setups
-
     echo "Great choice! Get ready."
     echo -e "\nWhich platform would you like to set up?"
     for i in "${!platforms[@]}"; do 
         echo "$((i+1)). ${platforms[$i]}"
     done
-
     read -p "Enter your choice: " platform_choice
-
     selected_platform="${platforms[$((platform_choice-1))]}"
-
     if [[ -n $selected_platform ]]; then
         completeSetup "$selected_platform"
     else
@@ -320,7 +340,4 @@ else
         exit 1
     fi
 fi
-
 echo "Process complete. Thank you for using Beckn-ONIX!"
-
-
